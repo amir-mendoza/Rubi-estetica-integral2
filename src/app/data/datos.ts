@@ -1,8 +1,4 @@
-import {
-  Cita, Especialista, EstadoCita, EstadoPago, Habitacion, Local, MetodoPago,
-  MovimientoPago, Paciente, Pedido, PlanSesiones, Producto, Promocion,
-  Tratamiento, Usuario
-} from './modelos';
+import { Habitacion, Local, Producto, Promocion, Tratamiento } from './modelos';
 
 /* ============================================================== LOCALES === */
 
@@ -63,43 +59,8 @@ export const HABITACIONES: Habitacion[] = [
   { id: 15, nombre: 'Cabina 10', localId: 2, equipamiento: 'Camilla multifuncional', activa: true }
 ];
 
-/* ================================================= REGLAS DE LA AGENDA === */
-
-/**
- * La paciente reserva un bloque horario (la hora a la que piensa llegar), no una
- * cabina ni una especialista. Las dos sedes atienden las 24 horas y cada bloque
- * de una hora acepta hasta 10 pacientes; la especialista y la cabina se asignan
- * en el local segun el orden de llegada.
- */
-export const AGENDA = {
-  bloqueMin: 60,
-  /** Citas que se aceptan por bloque horario en cada sede. */
-  cupoPorBloque: { 1: 10, 2: 10 } as Record<number, number>
-};
-
-export function cupoDeSede(localId: number): number {
-  return AGENDA.cupoPorBloque[localId] ?? 10;
-}
-
-export function cabinasDeSede(localId: number): Habitacion[] {
-  return HABITACIONES.filter(h => h.localId === localId && h.activa);
-}
-
-export function formatoHora12(hora?: string): string {
-  if (!hora) { return '—'; }
-  const [h = 0, m = 0] = hora.split(':').map(Number);
-  if (h === 24) { return `12:${String(m).padStart(2, '0')} AM`; }
-  const periodo = h >= 12 ? 'PM' : 'AM';
-  const hora12 = h % 12 || 12;
-  return `${hora12}:${String(m).padStart(2, '0')} ${periodo}`;
-}
-
-export const HORAS_SELECTOR = Array.from({ length: 24 }, (_, h) => {
-  const valor = `${String(h).padStart(2, '0')}:00`;
-  return { valor, etiqueta: formatoHora12(valor) };
-});
-
 /* ========================================================= TRATAMIENTOS === */
+/* Edita aqui el catalogo de tratamientos que se muestra en /tratamientos. */
 
 export const TRATAMIENTOS: Tratamiento[] = [
   {
@@ -380,12 +341,8 @@ export const TRATAMIENTOS: Tratamiento[] = [
   }
 ];
 
-/* ======================================================== ESPECIALISTAS === */
-
-export const ESPECIALISTAS: Especialista[] = [
-];
-
 /* ============================================================ PRODUCTOS === */
+/* Edita aqui el catalogo de productos que se muestra en /productos. */
 
 export const PRODUCTOS: Producto[] = [
   {
@@ -444,18 +401,6 @@ export const PRODUCTOS: Producto[] = [
   }
 ];
 
-/* ============================================================ PACIENTES === */
-
-export const PACIENTES: Paciente[] = [
-];
-
-/* ============================================================= USUARIOS === */
-
-export const USUARIOS: Usuario[] = [
-];
-
-/* ================================================================ CITAS === */
-
 const HOY = new Date();
 
 export function aISO(d: Date): string {
@@ -470,72 +415,8 @@ function conDias(dias: number): string {
   return aISO(d);
 }
 
-function sumarMinutos(hora: string, minutos: number): string {
-  const [h, m] = hora.split(':').map(Number);
-  const total = h * 60 + m + minutos;
-  return `${`${Math.floor(total / 60)}`.padStart(2, '0')}:${`${total % 60}`.padStart(2, '0')}`;
-}
-
-interface SemillaCita {
-  d: number; hora: string; pac: number; trat: number; loc: number;
-  /** Solo las citas ya atendidas o en proceso tienen especialista y cabina. */
-  esp?: number; hab?: number;
-  estado: EstadoCita; pago: EstadoPago; metodo?: MetodoPago; pagadoParcial?: number;
-  origen: 'Web' | 'Recepción' | 'WhatsApp'; por: string; notas?: string;
-}
-
-/**
- * Las citas se agendan por bloque horario. El bloque de 09:00 de la sede 1 llega
- * al cupo para mostrar como el sistema cierra esa hora y ofrece la siguiente.
- */
-const SEMILLAS: SemillaCita[] = [];
-
-function nombreTratamiento(id: number): Tratamiento {
-  return TRATAMIENTOS.find(t => t.id === id)!;
-}
-
-export const CITAS: Cita[] = SEMILLAS.map((s, i) => {
-  const trat = nombreTratamiento(s.trat);
-  const bloqueo = trat.duracionMin + trat.limpiezaMin;
-  const pagado = s.pago === 'Pagado' ? trat.precio
-    : s.pagadoParcial ?? 0;
-  return {
-    id: i + 1,
-    codigo: `CT-${(1000 + i + 1)}`,
-    fecha: conDias(s.d),
-    horaInicio: s.hora,
-    horaFin: sumarMinutos(s.hora, bloqueo),
-    pacienteId: s.pac,
-    tratamientoId: s.trat,
-    especialistaId: s.esp,
-    localId: s.loc,
-    habitacionId: s.hab,
-    estado: s.estado,
-    estadoPago: s.pago,
-    metodoPago: s.metodo,
-    montoTotal: trat.precio,
-    montoPagado: pagado,
-    registradaPor: s.por,
-    registradaEl: `${conDias(s.d - 3)} 18:42`,
-    confirmadaPor: s.pago === 'Pagado' ? (s.metodo === 'Izipay' ? 'Izipay (automático)' : s.por) : undefined,
-    codigoOperacion: s.pago === 'Pagado' ? `OP-${480000 + i * 137}` : undefined,
-    pagadaEl: s.pago === 'Pagado' ? `${conDias(s.d)} ${s.hora}` : undefined,
-    origen: s.origen,
-    notas: s.notas
-  };
-});
-
-/* ============================================================== PEDIDOS === */
-
-export const PEDIDOS: Pedido[] = [
-];
-
-/* ================================================================ PAGOS === */
-
-export const PAGOS: MovimientoPago[] = [
-];
-
 /* ========================================================= PROMOCIONES === */
+/* Edita aqui las promociones que aparecen en el inicio y carruseles. */
 
 /** Promociones publicas que se muestran en la pagina de inicio y catalogo. */
 export const PROMOCIONES: Promocion[] = [
@@ -696,15 +577,6 @@ export const PROMOCIONES: Promocion[] = [
   }
 ];
 
-/* =================================================== PLANES MULTISESION === */
-
-/**
- * Planes de sesiones personalizadas. Cada plan pertenece a una paciente
- * identificada por DNI y avanza sesion por sesion con el intervalo de dias que
- * indique la especialista.
- */
-export const PLANES: PlanSesiones[] = [];
-
 /* ============================================================= AYUDANTES == */
 
 export const CATEGORIAS_PRODUCTO = ['Todos', ...Array.from(new Set(PRODUCTOS.map(p => p.categoria)))];
@@ -718,45 +590,6 @@ export function tratamientoPorId(id: number): Tratamiento | undefined {
 }
 export function productoPorId(id: number): Producto | undefined {
   return PRODUCTOS.find(p => p.id === id);
-}
-export function especialistaPorId(id?: number): Especialista | undefined {
-  return ESPECIALISTAS.find(e => e.id === id);
-}
-export function localPorId(id: number): Local | undefined {
-  return LOCALES.find(l => l.id === id);
-}
-export function habitacionPorId(id?: number): Habitacion | undefined {
-  return HABITACIONES.find(h => h.id === id);
-}
-export function pacientePorId(id: number): Paciente | undefined {
-  return PACIENTES.find(p => p.id === id);
-}
-export function nombrePaciente(id: number): string {
-  const p = pacientePorId(id);
-  return p ? `${p.nombre} ${p.apellido}` : '—';
-}
-/** Las citas sin especialista se asignan en el local al momento de atender. */
-export function nombreEspecialista(id?: number): string {
-  const e = especialistaPorId(id);
-  return e ? `${e.nombre} ${e.apellido}` : 'Se asigna al llegar';
-}
-
-export function nombreCabina(id?: number): string {
-  const h = habitacionPorId(id);
-  return h ? h.nombre : 'Se asigna al llegar';
-}
-
-export const HOY_ISO = aISO(HOY);
-export const FECHA_HOY = HOY;
-
-export const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-export const DIAS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-
-export function formatoFechaLarga(iso: string): string {
-  const [a, m, d] = iso.split('-').map(Number);
-  const fecha = new Date(a, m - 1, d);
-  const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  return `${dias[fecha.getDay()]} ${d} de ${MESES[m - 1]} de ${a}`;
 }
 
 export function soles(monto: number): string {
