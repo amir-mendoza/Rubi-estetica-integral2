@@ -627,6 +627,26 @@ table.tabla .num { text-align: right; font-variant-numeric: tabular-nums; }
     align-items: stretch;
     flex-direction: column;
   }
+
+  .catalogo-compacto {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 18px;
+  }
+
+  .catalogo-compacto .tarjeta-trat__cuerpo,
+  .catalogo-compacto .tarjeta-prod__cuerpo {
+    padding: 18px;
+  }
+
+  .catalogo-compacto .tarjeta-trat__meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .catalogo-compacto .tarjeta-trat__meta .punto {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
